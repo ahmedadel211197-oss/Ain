@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>عين الحدث</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Tajawal:wght@400;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --N:#1a3a6b; --ND:#0e2347; --NL:#eef1f8; --NM:#254d8f;
+  --G:#c9a84c; --GD:#a8882e; --GL:#fdf6e3;
+  --R:#b91c1c;
+  --W:#fff; --BG:#f0f3f8; --T:#111827; --M:#6b7280; --B:#e2e6ef;
+  --S:0 1px 8px rgba(26,58,107,.09);
+}
+*{font-family:'Cairo',sans-serif}
+body{background:var(--BG);color:var(--T);direction:rtl}
+a{text-decoration:none;color:inherit}
+img{display:block;max-width:100%}
+
+/* ── BREAKING ── */
+.bk{background:var(--R);color:#fff;display:none;height:36px;align-items:center;overflow:hidden}
+.bk-tag{background:var(--ND);padding:0 18px;height:100%;display:flex;align-items:center;gap:7px;font-size:11px;font-weight:900;letter-spacing:2px;white-space:nowrap;flex-shrink:0}
+.bk-dot{width:7px;height:7px;background:var(--G);border-radius:50%;animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.bk-scroll{flex:1;overflow:hidden}
+.bk-inner{display:inline-block;white-space:nowrap;font-size:13px;font-weight:600;animation:marquee 40s linear infinite;padding-left:100%}
+@keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-200%)}}
+
+/* ── TOP BAR ── */
+.top-bar{background:var(--ND);border-bottom:2px solid var(--G)}
+.top-bar-in{max-width:1260px;margin:0 auto;padding:0 20px;display:flex;justify-content:space-between;align-items:stretch}
+.top-date{display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,.45);padding:7px 0;white-space:nowrap}
+.top-nav{display:flex;align-items:stretch}
+.top-nav a{color:rgba(255,255,255,.65);font-size:12px;font-weight:600;padding:0 14px;display:flex;align-items:center;gap:6px;border-right:1px solid rgba(255,255,255,.08);transition:all .15s;white-space:nowrap}
+.top-nav a:last-child{border-right:none}
+.top-nav a:hover{color:#fff;background:rgba(255,255,255,.07)}
+@media(max-width:640px){.top-bar{display:none}}
+
+/* ── HEADER ── */
+header{background:var(--W);border-bottom:4px solid var(--N);position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(26,58,107,.1)}
+.h-in{max-width:1260px;margin:0 auto;padding:8px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.logo{display:flex;align-items:center;gap:10px}
+.logo img{height:62px;width:auto;object-fit:contain}
+.logo-sep{width:1px;height:40px;background:var(--B)}
+.logo-txt .ln{font-family:'Tajawal',sans-serif;font-size:24px;font-weight:900;color:var(--N);line-height:1}
+.logo-txt .ln b{color:var(--G)}
+.logo-txt .ls{font-size:10px;color:var(--M);margin-top:3px}
+.search-box{display:flex;align-items:center;border:1.5px solid var(--B);border-radius:6px;overflow:hidden;background:var(--BG);transition:border-color .2s}
+.search-box:focus-within{border-color:var(--N)}
+.search-box input{border:none;background:transparent;padding:8px 14px;font-size:13px;color:var(--T);outline:none;width:200px;direction:rtl}
+.search-box button{background:var(--N);border:none;padding:8px 12px;color:#fff;cursor:pointer;display:flex;align-items:center;transition:background .2s}
+.search-box button:hover{background:var(--ND)}
+@media(max-width:640px){.search-box{display:none}}
+
+/* ── NAV ── */
+.nav{background:var(--N);overflow-x:auto;scrollbar-width:none}
+.nav::-webkit-scrollbar{display:none}
+.nav-in{max-width:1260px;margin:0 auto;padding:0 20px;display:flex}
+.nav-btn{padding:11px 15px;color:rgba(255,255,255,.7);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;display:flex;align-items:center;gap:6px;transition:all .15s;user-select:none}
+.nav-btn:hover{color:#fff;background:rgba(255,255,255,.06)}
+.nav-btn.on{color:var(--G);border-bottom-color:var(--G)}
+.nav-dd{position:relative;flex-shrink:0}
+.nav-dd-btn{padding:11px 15px;color:rgba(255,255,255,.7);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent;display:flex;align-items:center;gap:6px;transition:all .15s;background:none;border-top:none;border-left:none;border-right:none}
+.nav-dd:hover .nav-dd-btn{color:#fff;background:rgba(255,255,255,.06)}
+.nav-dd-btn .arr{transition:transform .2s}
+.nav-dd:hover .arr{transform:rotate(180deg)}
+.dd-menu{display:none;position:absolute;top:100%;right:0;background:var(--W);border:1px solid var(--B);border-top:3px solid var(--G);border-radius:0 0 8px 8px;min-width:180px;box-shadow:0 8px 24px rgba(26,58,107,.15);z-index:500}
+.nav-dd:hover .dd-menu{display:block}
+.dd-item{display:flex;align-items:center;gap:9px;padding:10px 15px;font-size:13px;font-weight:600;color:var(--T);cursor:pointer;transition:background .13s;border-bottom:1px solid var(--B)}
+.dd-item:last-child{border-bottom:none}
+.dd-item:hover{background:var(--NL);color:var(--N)}
+
+/* ── PAGE LAYOUT ── */
+.wrap{max-width:1260px;margin:0 auto;padding:26px 20px;display:grid;grid-template-columns:1fr 300px;gap:26px}
+@media(max-width:960px){.wrap{grid-template-columns:1fr;padding:16px}}
+
+/* ── BREADCRUMB ── */
+.breadcrumb{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--M);margin-bottom:18px;flex-wrap:wrap}
+.breadcrumb a{color:var(--N);font-weight:600;transition:color .15s}
+.breadcrumb a:hover{color:var(--G)}
+.breadcrumb svg{opacity:.4;flex-shrink:0}
+.breadcrumb .cur{color:var(--T);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px}
+
+/* ── ARTICLE ── */
+.article-card{background:var(--W);border-radius:12px;border:1px solid var(--B);box-shadow:var(--S);overflow:hidden}
+
+/* hero image */
+.art-hero{position:relative;height:420px;overflow:hidden;background:var(--ND)}
+.art-hero img{width:100%;height:100%;object-fit:cover}
+.art-hero-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--ND),var(--NM))}
+@media(max-width:640px){.art-hero{height:240px}}
+
+/* category badge on image */
+.art-cat-badge{position:absolute;top:16px;right:16px;padding:5px 14px;border-radius:4px;font-size:12px;font-weight:700;letter-spacing:.3px}
+
+/* article body */
+.art-body{padding:28px 32px}
+@media(max-width:640px){.art-body{padding:18px 16px}}
+
+.art-title{font-family:'Tajawal',sans-serif;font-size:28px;font-weight:900;color:var(--T);line-height:1.55;margin-bottom:16px}
+@media(max-width:640px){.art-title{font-size:20px}}
+
+/* meta row */
+.art-meta{display:flex;align-items:center;flex-wrap:wrap;gap:16px;padding:14px 0;border-top:1px solid var(--B);border-bottom:1px solid var(--B);margin-bottom:24px}
+.meta-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--M)}
+.meta-item b{color:var(--T);font-weight:700}
+.meta-views{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--M);margin-right:auto}
+
+/* content */
+.art-content{font-size:16px;line-height:2;color:#1f2937}
+.art-content p{margin-bottom:18px}
+.art-content h2{font-family:'Tajawal',sans-serif;font-size:22px;font-weight:800;color:var(--N);margin:28px 0 14px;padding-right:14px;border-right:4px solid var(--G)}
+.art-content h3{font-family:'Tajawal',sans-serif;font-size:18px;font-weight:700;color:var(--T);margin:22px 0 10px}
+.art-content ul,
+.art-content ol{margin:0 24px 18px;line-height:2.2}
+.art-content li{margin-bottom:4px}
+.art-content a{color:var(--N);text-decoration:underline}
+.art-content blockquote{border-right:4px solid var(--G);background:var(--GL);padding:14px 18px;margin:20px 0;border-radius:0 6px 6px 0;font-style:italic;color:var(--M)}
+.art-content img{border-radius:8px;margin:20px auto;max-width:100%}
+.art-content strong{color:var(--T)}
+
+/* tags */
+.art-tags{display:flex;flex-wrap:wrap;gap:8px;padding-top:20px;border-top:1px solid var(--B);margin-top:24px}
+.tag-chip{background:var(--NL);color:var(--N);font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;transition:background .15s;cursor:pointer}
+.tag-chip:hover{background:var(--N);color:#fff}
+
+/* ── LIKE / SHARE ── */
+.art-actions{display:flex;align-items:center;gap:10px;padding:18px 32px;border-top:1px solid var(--B);flex-wrap:wrap}
+@media(max-width:640px){.art-actions{padding:14px 16px}}
+.like-btn{display:flex;align-items:center;gap:7px;padding:9px 20px;border-radius:8px;border:1.5px solid var(--B);background:var(--W);font-size:13px;font-weight:700;color:var(--M);cursor:pointer;transition:all .2s}
+.like-btn:hover{border-color:#e11d48;color:#e11d48}
+.like-btn.liked{background:#fff1f2;border-color:#e11d48;color:#e11d48}
+.share-btn{display:flex;align-items:center;gap:7px;padding:9px 20px;border-radius:8px;border:1.5px solid var(--B);background:var(--W);font-size:13px;font-weight:700;color:var(--M);cursor:pointer;transition:all .2s}
+.share-btn:hover{border-color:var(--N);color:var(--N)}
+.copy-btn{display:flex;align-items:center;gap:7px;padding:9px 20px;border-radius:8px;border:1.5px solid var(--B);background:var(--W);font-size:13px;font-weight:700;color:var(--M);cursor:pointer;transition:all .2s}
+.copy-btn:hover{border-color:var(--G);color:var(--GD)}
+.copy-btn.copied{background:var(--GL);border-color:var(--G);color:var(--GD)}
+
+/* ── RELATED ── */
+.related{background:var(--W);border-radius:12px;border:1px solid var(--B);box-shadow:var(--S);overflow:hidden;margin-top:22px}
+.related-head{padding:14px 20px;border-bottom:3px solid var(--G);background:var(--N);font-family:'Tajawal',sans-serif;font-size:15px;font-weight:800;color:#fff;display:flex;align-items:center;gap:8px}
+.rel-list{padding:14px}
+.rel-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--B);align-items:flex-start}
+.rel-item:last-child{border-bottom:none;padding-bottom:0}
+.rel-thumb{width:80px;height:60px;border-radius:6px;overflow:hidden;background:var(--NL);flex-shrink:0}
+.rel-thumb img{width:100%;height:100%;object-fit:cover}
+.rel-title{font-size:13px;font-weight:700;color:var(--T);line-height:1.6;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;transition:color .15s}
+.rel-item:hover .rel-title{color:var(--N)}
+.rel-date{font-size:11px;color:var(--M);margin-top:4px;display:flex;align-items:center;gap:3px}
+
+/* ── SIDEBAR ── */
+.aside{display:flex;flex-direction:column;gap:20px}
+.wid{background:var(--W);border-radius:10px;border:1px solid var(--B);box-shadow:var(--S);overflow:hidden}
+.wid-h{background:var(--N);color:#fff;padding:11px 16px;font-family:'Tajawal',sans-serif;font-size:14px;font-weight:800;display:flex;align-items:center;gap:8px;border-bottom:3px solid var(--G)}
+.wid-b{padding:12px 14px}
+.mv-list{display:flex;flex-direction:column;gap:12px}
+.mv-row{display:flex;gap:9px;align-items:flex-start}
+.mv-n{font-family:'Tajawal',sans-serif;font-size:22px;font-weight:900;line-height:1;min-width:26px;color:var(--B)}
+.mv-row:nth-child(1) .mv-n{color:var(--G)}
+.mv-row:nth-child(2) .mv-n{color:#9ca3af}
+.mv-row:nth-child(3) .mv-n{color:#c97c4a}
+.mv-info{flex:1}
+.mv-title{font-size:12px;font-weight:700;color:var(--T);line-height:1.6;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;transition:color .15s}
+.mv-row:hover .mv-title{color:var(--N)}
+.mv-views{font-size:10px;color:var(--M);margin-top:2px;display:flex;align-items:center;gap:3px}
+
+/* ── NOT FOUND ── */
+.not-found{text-align:center;padding:80px 20px;background:var(--W);border-radius:12px;border:1px solid var(--B)}
+.not-found h2{font-family:'Tajawal',sans-serif;font-size:24px;font-weight:800;color:var(--N);margin-bottom:10px}
+.not-found p{font-size:14px;color:var(--M);margin-bottom:24px}
+.back-btn{display:inline-flex;align-items:center;gap:8px;padding:11px 24px;background:var(--N);color:#fff;border-radius:8px;font-size:14px;font-weight:700;transition:background .2s}
+.back-btn:hover{background:var(--ND)}
+
+/* ── SKELETON ── */
+.sk{background:linear-gradient(90deg,#e4e9f3 25%,#f0f3f8 50%,#e4e9f3 75%);background-size:200% 100%;animation:sh 1.3s ease-in-out infinite;border-radius:5px}
+@keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:22px;left:22px;background:var(--ND);color:#fff;padding:11px 18px;border-radius:8px;font-size:13px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.2);display:flex;align-items:center;gap:8px;transform:translateY(60px);opacity:0;transition:all .3s;z-index:999;border-right:4px solid var(--G)}
+.toast.show{transform:translateY(0);opacity:1}
+
+/* ── FOOTER ── */
+.footer{background:var(--ND);border-top:4px solid var(--G);margin-top:40px}
+.f-in{max-width:1260px;margin:0 auto;padding:26px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.f-logo{font-family:'Tajawal',sans-serif;font-size:18px;font-weight:900;color:#fff}
+.f-logo b{color:var(--G)}
+.f-links{display:flex;gap:16px}
+.f-links a{font-size:12px;color:rgba(255,255,255,.5);transition:color .15s}
+.f-links a:hover{color:#fff}
+.f-copy{border-top:1px solid rgba(255,255,255,.07);padding:12px 20px;text-align:center;font-size:11px;color:rgba(255,255,255,.3);max-width:1260px;margin:0 auto}
+.f-copy b{color:var(--G)}
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- BREAKING -->
+<div class="bk" id="bk">
+  <div class="bk-tag"><div class="bk-dot"></div>عاجل</div>
+  <div class="bk-scroll"><span class="bk-inner" id="bkText"></span></div>
+</div>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+  <div class="top-bar-in">
+    <div class="top-date">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span id="topDate"></span>
+    </div>
+    <nav class="top-nav">
+      <a href="/"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>الرئيسية</a>
+      <a href="/egypt"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 21V11h6v10"/></svg>أخبار مصر</a>
+      <a href="/world"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>العالم</a>
+      <a href="/sports"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20"/><path d="M2 12h20"/></svg>الرياضة</a>
+      <a href="/economy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>الاقتصاد</a>
+      <a href="/technology"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>التكنولوجيا</a>
+      <a href="/about">من نحن</a>
+      <a href="/contact">تواصل معنا</a>
+      <a href="/admin/login.html"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>لوحة التحكم</a>
+    </nav>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="h-in">
+    <a href="/" class="logo">
+      <img src="/img/logo.png" alt="عين الحدث" onerror="this.style.display='none'">
+      <div class="logo-sep"></div>
+      <div class="logo-txt">
+        <div class="ln">عين <b>الحدث</b></div>
+        <div class="ls">الخبر... لحظة بلحظة</div>
+      </div>
+    </a>
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="ابحث في الأخبار...">
+      <button onclick="doSearch()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-in" id="navIn">
+    <a class="nav-btn" href="/">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      الرئيسية
+    </a>
+    <div class="nav-dd">
+      <button class="nav-dd-btn" id="ddBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        الأقسام
+        <svg class="arr" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="dd-menu" id="ddMenu"></div>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="wrap">
+  <main id="mainContent">
+    <!-- skeleton -->
+    <div id="skeleton">
+      <div style="height:420px;border-radius:12px;overflow:hidden;margin-bottom:22px"><div class="sk" style="height:100%"></div></div>
+      <div style="background:var(--W);border-radius:12px;padding:28px;border:1px solid var(--B)">
+        <div class="sk" style="height:18px;width:30%;margin-bottom:16px"></div>
+        <div class="sk" style="height:32px;margin-bottom:8px"></div>
+        <div class="sk" style="height:32px;width:80%;margin-bottom:24px"></div>
+        <div class="sk" style="height:14px;margin-bottom:10px"></div>
+        <div class="sk" style="height:14px;margin-bottom:10px"></div>
+        <div class="sk" style="height:14px;width:70%;margin-bottom:10px"></div>
+        <div class="sk" style="height:14px;margin-bottom:10px"></div>
+        <div class="sk" style="height:14px;width:85%"></div>
+      </div>
+    </div>
+    <div id="articleWrap" style="display:none"></div>
+  </main>
+
+  <!-- ASIDE -->
+  <aside class="aside">
+    <div class="wid">
+      <div class="wid-h">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        الأكثر مشاهدة
+      </div>
+      <div class="wid-b"><div class="mv-list" id="mvList"><div style="color:var(--M);font-size:12px;text-align:center;padding:14px">جاري التحميل...</div></div></div>
+    </div>
+  </aside>
+</div>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="f-in">
+    <div class="f-logo">عين <b>الحدث</b></div>
+    <div class="f-links">
+      <a href="/">الرئيسية</a>
+      <a href="/about">من نحن</a>
+      <a href="/contact">تواصل معنا</a>
+      <a href="/privacy">الخصوصية</a>
+    </div>
+  </div>
+  <div class="f-copy">جميع الحقوق محفوظة &copy; <b>عين الحدث</b> <span id="fyear"></span></div>
+</footer>
+
+<script>
+const SUPABASE_URL = 'https://eejzgklrfabvvuyksjbj.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlanpna2xyZmFidnZ1eWtzamJqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1MjkwMTcsImV4cCI6MjA4OTEwNTAxN30.gbhB_W7X3xlKkk7DjnTEhMhHqj8_O61HhaiNFq8YigI';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ── SVG ICONS ──
+const I = {
+  eye:`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`,
+  pen:`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`,
+  cal:`<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+  heart:`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`,
+  share:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`,
+  link:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`,
+  check:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+};
+
+// ── INIT ──
+document.addEventListener('DOMContentLoaded', async () => {
+  document.getElementById('topDate').textContent =
+    new Date().toLocaleDateString('ar-EG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('fyear').textContent = new Date().getFullYear();
+
+  const slug = getSlug();
+  if (!slug) { showNotFound(); return; }
+
+  await Promise.all([loadCats(), loadBreaking()]);
+  await loadArticle(slug);
+  loadMostViewed();
+});
+
+// ── GET SLUG FROM URL ──
+// يشتغل مع: /article/slug  أو  /article.html?slug=xxx  أو  ?article=slug
+function getSlug() {
+  const path   = window.location.pathname;
+  const params = new URLSearchParams(window.location.search);
+
+  // /article/my-slug
+  const match = path.match(/\/article\/([^/]+)/);
+  if (match) return decodeURIComponent(match[1]);
+
+  // ?slug=my-slug
+  if (params.get('slug')) return params.get('slug');
+
+  // ?article=my-slug
+  if (params.get('article')) return params.get('article');
+
+  return null;
+}
+
+// ── LOAD ARTICLE ──
+async function loadArticle(slug) {
+  const { data: art, error } = await sb
+    .from('articles')
+    .select(`
+      id, title, slug, content, excerpt, cover_image,
+      published, published_at, created_at,
+      author:users(name),
+      category:categories(name, slug, color, icon)
+    `)
+    .eq('slug', slug)
+    .eq('published', true)
+    .single();
+
+  if (error || !art) { showNotFound(); return; }
+
+  // update page title & meta
+  document.title = `${art.title} | عين الحدث`;
+
+  // count view
+  recordView(art.id);
+
+  // get views + likes count
+  const [{ data: viewsData }, { data: likesData }] = await Promise.all([
+    sb.from('article_views_count').select('views_count').eq('article_id', art.id).single(),
+    sb.from('article_likes_count').select('likes_count').eq('article_id', art.id).single(),
+  ]);
+
+  const views = viewsData?.views_count || 0;
+  const likes = likesData?.likes_count || 0;
+
+  // render
+  renderArticle(art, views, likes);
+
+  // load related
+  if (art.category) loadRelated(art.id, art.category);
+
+  // hide skeleton
+  document.getElementById('skeleton').style.display = 'none';
+  document.getElementById('articleWrap').style.display = 'block';
+}
+
+// ── RENDER ARTICLE ──
+function renderArticle(art, views, likes) {
+  const date  = fmtD(art.published_at || art.created_at);
+  const cat   = art.category;
+  const color = cat?.color || '#1a3a6b';
+  const tc    = txtClr(color);
+
+  document.getElementById('articleWrap').innerHTML = `
+
+    <!-- BREADCRUMB -->
+    <div class="breadcrumb">
+      <a href="/">الرئيسية</a>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      ${cat ? `<a href="/?cat=${cat.slug}">${cat.name}</a>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>` : ''}
+      <span class="cur">${x(art.title)}</span>
+    </div>
+
+    <!-- ARTICLE CARD -->
+    <div class="article-card">
+
+      <!-- HERO IMAGE -->
+      <div class="art-hero">
+        ${art.cover_image
+          ? `<img src="${x(art.cover_image)}" alt="${x(art.title)}" loading="eager">`
+          : `<div class="art-hero-ph"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>`}
+        ${cat ? `<span class="art-cat-badge" style="background:${color};color:${tc}">${cat.name}</span>` : ''}
+      </div>
+
+      <!-- BODY -->
+      <div class="art-body">
+        <h1 class="art-title">${x(art.title)}</h1>
+
+        <div class="art-meta">
+          <div class="meta-item">${I.pen} <b>${art.author?.name || 'فريق التحرير'}</b></div>
+          <div class="meta-item">${I.cal} ${date}</div>
+          <div class="meta-views">${I.eye} <span id="viewCount">${fmtN(views)}</span> مشاهدة</div>
+        </div>
+
+        ${art.excerpt ? `<p style="font-size:17px;color:var(--M);line-height:1.9;margin-bottom:22px;padding:14px 18px;background:var(--NL);border-radius:8px;border-right:4px solid var(--N)">${x(art.excerpt)}</p>` : ''}
+
+        <div class="art-content" id="artContent">
+          ${art.content || '<p style="color:var(--M)">لا يوجد محتوى لهذا المقال.</p>'}
+        </div>
+      </div>
+
+      <!-- ACTIONS -->
+      <div class="art-actions">
+        <button class="like-btn" id="likeBtn" onclick="toggleLike('${art.id}')">
+          ${I.heart}
+          <span id="likeCount">${fmtN(likes)}</span>
+          إعجاب
+        </button>
+        <button class="share-btn" onclick="shareArticle()">
+          ${I.share}
+          مشاركة
+        </button>
+        <button class="copy-btn" id="copyBtn" onclick="copyLink()">
+          ${I.link}
+          نسخ الرابط
+        </button>
+      </div>
+
+    </div>
+
+    <!-- RELATED ARTICLES -->
+    <div class="related" id="relatedWrap" style="display:none">
+      <div class="related-head">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        مقالات ذات صلة
+      </div>
+      <div class="rel-list" id="relList"></div>
+    </div>
+  `;
+
+  // check if user already liked
+  checkLiked(art.id);
+}
+
+// ── RECORD VIEW ──
+async function recordView(articleId) {
+  // hash IP بطريقة بسيطة بدون الـ IP الحقيقي
+  const viewKey = `viewed_${articleId}`;
+  if (sessionStorage.getItem(viewKey)) return; // مش يعد مرتين في نفس الجلسة
+
+  await sb.from('views').insert({
+    article_id: articleId,
+    ip_hash: btoa(navigator.userAgent + Date.now()).slice(0, 32),
+  });
+
+  sessionStorage.setItem(viewKey, '1');
+}
+
+// ── LIKES ──
+async function checkLiked(articleId) {
+  const likeKey = `liked_${articleId}`;
+  if (localStorage.getItem(likeKey)) {
+    document.getElementById('likeBtn')?.classList.add('liked');
+  }
+}
+
+async function toggleLike(articleId) {
+  const btn     = document.getElementById('likeBtn');
+  const counter = document.getElementById('likeCount');
+  const likeKey = `liked_${articleId}`;
+  const isLiked = localStorage.getItem(likeKey);
+
+  if (isLiked) {
+    // إزالة الإعجاب
+    await sb.from('likes').delete()
+      .eq('article_id', articleId)
+      .eq('ip_hash', likeKey);
+    localStorage.removeItem(likeKey);
+    btn.classList.remove('liked');
+    counter.textContent = fmtN(Math.max(0, parseInt(counter.textContent.replace(/[كم]/g,'')) - 1));
+  } else {
+    // إضافة إعجاب
+    await sb.from('likes').insert({
+      article_id: articleId,
+      ip_hash: likeKey,
+    });
+    localStorage.setItem(likeKey, '1');
+    btn.classList.add('liked');
+    counter.textContent = fmtN((parseInt(counter.textContent.replace(/[كم]/g,'')) || 0) + 1);
+  }
+}
+
+// ── RELATED ARTICLES ──
+async function loadRelated(articleId, cat) {
+  const { data } = await sb
+    .from('articles')
+    .select('id, title, slug, cover_image, published_at, created_at')
+    .eq('published', true)
+    .eq('category_id', cat.id || '')  // نفس القسم
+    .neq('id', articleId)             // مش المقال الحالي
+    .order('published_at', { ascending: false })
+    .limit(4);
+
+  if (!data?.length) return;
+
+  const wrap = document.getElementById('relatedWrap');
+  const list = document.getElementById('relList');
+  wrap.style.display = 'block';
+
+  list.innerHTML = data.map(a => `
+    <a class="rel-item" href="/article/${x(a.slug)}">
+      <div class="rel-thumb">
+        ${a.cover_image
+          ? `<img src="${x(a.cover_image)}" alt="${x(a.title)}" loading="lazy">`
+          : `<div style="width:100%;height:100%;background:var(--NL)"></div>`}
+      </div>
+      <div>
+        <div class="rel-title">${x(a.title)}</div>
+        <div class="rel-date">${I.cal} ${fmtD(a.published_at || a.created_at)}</div>
+      </div>
+    </a>`).join('');
+}
+
+// ── MOST VIEWED ──
+async function loadMostViewed() {
+  const { data: viewsData } = await sb.from('article_views_count').select('*');
+  if (!viewsData) return;
+
+  const viewsMap = {};
+  viewsData.forEach(r => { viewsMap[r.article_id] = +r.views_count || 0; });
+
+  const { data } = await sb.from('articles')
+    .select('id, title, slug')
+    .eq('published', true)
+    .limit(30);
+  if (!data?.length) return;
+
+  const top5 = [...data].sort((a,b)=>(viewsMap[b.id]||0)-(viewsMap[a.id]||0)).slice(0,5);
+
+  document.getElementById('mvList').innerHTML = top5.map((a, i) => `
+    <a class="mv-row" href="/article/${x(a.slug)}">
+      <div class="mv-n">${i+1}</div>
+      <div class="mv-info">
+        <div class="mv-title">${x(a.title)}</div>
+        <div class="mv-views">${I.eye} ${fmtN(viewsMap[a.id]||0)} مشاهدة</div>
+      </div>
+    </a>`).join('');
+}
+
+// ── CATS ──
+async function loadCats() {
+  const { data } = await sb.from('categories').select('*').order('id');
+  if (!data) return;
+  const menu = document.getElementById('ddMenu');
+  data.forEach(c => {
+    const el = document.createElement('a');
+    el.className = 'dd-item';
+    el.href = `/?cat=${c.slug}`;
+    el.innerHTML = `${c.name}`;
+    menu.appendChild(el);
+  });
+}
+
+// ── BREAKING ──
+async function loadBreaking() {
+  const { data } = await sb.from('breaking_news').select('text').eq('is_active', true).order('created_at', { ascending: false }).limit(5);
+  if (data?.length) {
+    document.getElementById('bk').style.display = 'flex';
+    document.getElementById('bkText').textContent = data.map(n => `  •  ${n.text}`).join('     ');
+  }
+}
+
+// ── NOT FOUND ──
+function showNotFound() {
+  document.getElementById('skeleton').style.display = 'none';
+  document.getElementById('articleWrap').style.display = 'block';
+  document.getElementById('articleWrap').innerHTML = `
+    <div class="not-found">
+      <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 18px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <h2>المقال غير موجود</h2>
+      <p>المقال الذي تبحث عنه غير موجود أو تم حذفه</p>
+      <a href="/" class="back-btn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        العودة للرئيسية
+      </a>
+    </div>`;
+  document.title = 'المقال غير موجود | عين الحدث';
+}
+
+// ── SHARE / COPY ──
+function shareArticle() {
+  if (navigator.share) {
+    navigator.share({
+      title: document.title,
+      url: window.location.href,
+    });
+  } else {
+    copyLink();
+  }
+}
+
+function copyLink() {
+  navigator.clipboard.writeText(window.location.href).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.classList.add('copied');
+    btn.innerHTML = `${I.check} تم النسخ!`;
+    toast('تم نسخ الرابط', 'ok');
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.innerHTML = `${I.link} نسخ الرابط`;
+    }, 2500);
+  });
+}
+
+// ── SEARCH ──
+function doSearch() {
+  const q = document.getElementById('searchInput').value.trim();
+  if (q) window.location.href = `/?search=${encodeURIComponent(q)}`;
+}
+document.getElementById('searchInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doSearch();
+});
+
+// ── TOAST ──
+function toast(msg, type='ok') {
+  const t = document.getElementById('toast');
+  t.className = `toast ${type}`;
+  t.innerHTML = `${I.check} ${msg}`;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ── HELPERS ──
+function fmtD(iso) { return iso ? new Date(iso).toLocaleDateString('ar-EG',{year:'numeric',month:'long',day:'numeric'}) : ''; }
+function fmtN(n)   { return n>=1e6?(n/1e6).toFixed(1)+'م':n>=1e3?(n/1e3).toFixed(1)+'ك':String(n); }
+function x(s)      { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function txtClr(h) { try{const r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);return(r*299+g*587+b*114)/1000>128?'#0e2347':'#fff'}catch{return'#fff'} }
+</script>
+</body>
+</html>

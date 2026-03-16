@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة التحكم | عين الحدث</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Tajawal:wght@700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --N:#1a3a6b; --ND:#0e2347; --NL:#eef1f8; --NM:#254d8f;
+  --G:#c9a84c; --GD:#a8882e; --GL:#fdf6e3;
+  --R:#dc2626; --RL:#fef2f2;
+  --OK:#16a34a; --OKL:#f0fdf4;
+  --W:#fff; --BG:#f0f3f8; --T:#111827; --M:#6b7280; --B:#e2e6ef;
+  --S:0 1px 6px rgba(26,58,107,.09);
+  --SB:260px; /* sidebar width */
+}
+*{font-family:'Cairo',sans-serif}
+body{background:var(--BG);color:var(--T);min-height:100vh;direction:rtl}
+a{text-decoration:none;color:inherit}
+button{cursor:pointer;font-family:'Cairo',sans-serif}
+input,textarea,select{font-family:'Cairo',sans-serif;direction:rtl}
+
+/* ════════ LAYOUT ════════ */
+.layout{display:flex;min-height:100vh}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:var(--SB);background:var(--ND);
+  display:flex;flex-direction:column;
+  position:fixed;top:0;right:0;bottom:0;
+  z-index:400;transition:transform .25s;
+  box-shadow:2px 0 20px rgba(0,0,0,.2);
+}
+
+.sb-logo{
+  padding:20px 18px;border-bottom:1px solid rgba(255,255,255,.08);
+  display:flex;align-items:center;gap:10px;flex-shrink:0;
+}
+.sb-logo img{height:46px;width:auto;object-fit:contain}
+.sb-logo-txt .n{font-family:'Tajawal',sans-serif;font-size:18px;font-weight:900;color:#fff;line-height:1}
+.sb-logo-txt .n b{color:var(--G)}
+.sb-logo-txt .s{font-size:10px;color:rgba(255,255,255,.4);margin-top:2px}
+
+.sb-user{
+  padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.06);
+  display:flex;align-items:center;gap:10px;flex-shrink:0;
+}
+.sb-avatar{
+  width:36px;height:36px;border-radius:50%;
+  background:var(--N);border:2px solid var(--G);
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:14px;font-weight:700;flex-shrink:0;
+}
+.sb-uname{font-size:13px;font-weight:700;color:#fff;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sb-urole{font-size:10px;color:var(--G);font-weight:600}
+
+.sb-nav{flex:1;overflow-y:auto;padding:10px 0;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.1) transparent}
+
+.sb-section{font-size:10px;font-weight:700;letter-spacing:2px;color:rgba(255,255,255,.25);padding:10px 18px 4px;text-transform:uppercase}
+
+.sb-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 18px;color:rgba(255,255,255,.6);
+  font-size:13px;font-weight:600;cursor:pointer;
+  transition:all .15s;border-right:3px solid transparent;
+  white-space:nowrap;
+}
+.sb-item:hover{color:#fff;background:rgba(255,255,255,.06)}
+.sb-item.on{color:var(--G);background:rgba(201,168,76,.08);border-right-color:var(--G)}
+.sb-item svg{flex-shrink:0;opacity:.7}
+.sb-item.on svg{opacity:1}
+.sb-badge{background:var(--R);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-right:auto}
+
+.sb-footer{padding:14px 18px;border-top:1px solid rgba(255,255,255,.06);flex-shrink:0}
+.logout-btn{
+  width:100%;padding:9px;background:rgba(220,38,38,.15);color:#f87171;
+  border:1px solid rgba(220,38,38,.25);border-radius:7px;
+  font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:7px;
+  transition:background .15s;
+}
+.logout-btn:hover{background:rgba(220,38,38,.25)}
+
+/* ── MAIN ── */
+.main{margin-right:var(--SB);flex:1;display:flex;flex-direction:column;min-height:100vh}
+
+/* topbar */
+.topbar{
+  background:var(--W);border-bottom:1px solid var(--B);
+  padding:0 24px;height:56px;display:flex;align-items:center;
+  justify-content:space-between;gap:16px;position:sticky;top:0;z-index:100;
+  box-shadow:0 1px 6px rgba(26,58,107,.06);
+}
+.tb-title{font-family:'Tajawal',sans-serif;font-size:18px;font-weight:800;color:var(--N)}
+.tb-right{display:flex;align-items:center;gap:10px}
+.tb-date{font-size:12px;color:var(--M);display:flex;align-items:center;gap:5px}
+
+/* content */
+.content{padding:24px;flex:1}
+
+/* ════════ PAGES ════════ */
+.page{display:none}
+.page.on{display:block}
+
+/* ── STATS ── */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+@media(max-width:900px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
+.stat-card{background:var(--W);border-radius:10px;border:1px solid var(--B);box-shadow:var(--S);padding:20px;display:flex;align-items:center;gap:14px}
+.stat-ico{width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.stat-ico.blue{background:var(--NL)}
+.stat-ico.gold{background:var(--GL)}
+.stat-ico.red{background:var(--RL)}
+.stat-ico.green{background:var(--OKL)}
+.stat-num{font-family:'Tajawal',sans-serif;font-size:26px;font-weight:900;color:var(--T);line-height:1}
+.stat-lbl{font-size:12px;color:var(--M);margin-top:3px}
+
+/* recent articles table */
+.tbl-wrap{background:var(--W);border-radius:10px;border:1px solid var(--B);box-shadow:var(--S);overflow:hidden}
+.tbl-head{padding:14px 18px;border-bottom:1px solid var(--B);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.tbl-title{font-family:'Tajawal',sans-serif;font-size:15px;font-weight:800;color:var(--N);display:flex;align-items:center;gap:8px}
+.tbl-title::before{content:'';width:4px;height:18px;background:var(--G);border-radius:2px;display:block}
+table{width:100%;border-collapse:collapse}
+th{background:var(--BG);padding:11px 14px;text-align:right;font-size:12px;font-weight:700;color:var(--M);border-bottom:1px solid var(--B);white-space:nowrap}
+td{padding:12px 14px;border-bottom:1px solid var(--B);font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafbfd}
+.td-title{font-weight:700;color:var(--T);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.td-cat{display:inline-block;font-size:10px;font-weight:700;padding:2px 9px;border-radius:3px;white-space:nowrap}
+.td-pub{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 10px;border-radius:12px;font-weight:700}
+.td-pub.yes{background:var(--OKL);color:var(--OK)}
+.td-pub.no{background:var(--RL);color:var(--R)}
+.td-actions{display:flex;align-items:center;gap:6px}
+.act-btn{padding:5px 11px;border-radius:6px;font-size:11px;font-weight:700;border:1.5px solid;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:4px}
+.act-btn.edit{border-color:var(--N);color:var(--N);background:var(--W)}
+.act-btn.edit:hover{background:var(--NL)}
+.act-btn.del{border-color:var(--R);color:var(--R);background:var(--W)}
+.act-btn.del:hover{background:var(--RL)}
+.act-btn.pub{border-color:var(--OK);color:var(--OK);background:var(--W)}
+.act-btn.pub:hover{background:var(--OKL)}
+
+/* ── ARTICLE FORM ── */
+.form-grid{display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start}
+@media(max-width:900px){.form-grid{grid-template-columns:1fr}}
+
+.form-card{background:var(--W);border-radius:10px;border:1px solid var(--B);box-shadow:var(--S);padding:22px}
+.form-card-title{font-family:'Tajawal',sans-serif;font-size:15px;font-weight:800;color:var(--N);margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.form-card-title::before{content:'';width:4px;height:18px;background:var(--G);border-radius:2px;display:block}
+
+.fg{margin-bottom:16px}
+.fg label{display:block;font-size:13px;font-weight:700;color:var(--T);margin-bottom:6px}
+.fg input,.fg select,.fg textarea{
+  width:100%;padding:10px 13px;border:1.5px solid var(--B);border-radius:7px;
+  font-size:13px;color:var(--T);background:var(--BG);outline:none;
+  transition:border-color .2s,background .2s;
+}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--N);background:var(--W)}
+.fg textarea{resize:vertical;min-height:120px;line-height:1.7}
+.fg select option{background:var(--W)}
+
+.char-count{font-size:11px;color:var(--M);text-align:left;margin-top:4px}
+
+/* editor */
+.editor-toolbar{
+  display:flex;flex-wrap:wrap;gap:4px;padding:8px 10px;
+  background:var(--BG);border:1.5px solid var(--B);
+  border-radius:7px 7px 0 0;border-bottom:none;
+}
+.et-btn{
+  padding:5px 10px;border:1px solid var(--B);border-radius:5px;
+  background:var(--W);font-size:12px;font-weight:700;color:var(--T);
+  cursor:pointer;transition:all .13s;display:flex;align-items:center;gap:4px;
+}
+.et-btn:hover{background:var(--NL);border-color:var(--N);color:var(--N)}
+.editor-area{
+  width:100%;min-height:300px;padding:14px;
+  border:1.5px solid var(--B);border-radius:0 0 7px 7px;
+  font-size:14px;color:var(--T);background:var(--W);outline:none;
+  line-height:1.9;resize:vertical;
+}
+.editor-area:focus{border-color:var(--N)}
+
+/* image preview */
+.img-preview{
+  width:100%;height:160px;border:2px dashed var(--B);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--BG);margin-top:8px;overflow:hidden;cursor:pointer;
+  transition:border-color .2s;
+}
+.img-preview:hover{border-color:var(--N)}
+.img-preview img{width:100%;height:100%;object-fit:cover}
+.img-preview-ph{text-align:center;color:var(--M)}
+.img-preview-ph svg{margin:0 auto 8px}
+.img-preview-ph p{font-size:12px}
+
+/* action btns */
+.form-actions{display:flex;gap:10px;flex-wrap:wrap}
+.btn{
+  padding:10px 22px;border-radius:7px;font-size:13px;font-weight:700;
+  border:none;display:flex;align-items:center;gap:7px;transition:all .15s;
+}
+.btn-primary{background:var(--N);color:#fff}
+.btn-primary:hover{background:var(--ND);transform:translateY(-1px)}
+.btn-success{background:var(--OK);color:#fff}
+.btn-success:hover{background:#15803d}
+.btn-outline{background:var(--W);color:var(--N);border:1.5px solid var(--N)}
+.btn-outline:hover{background:var(--NL)}
+.btn-danger{background:var(--R);color:#fff}
+.btn-danger:hover{background:#b91c1c}
+.btn:disabled{opacity:.5;cursor:default;transform:none!important}
+
+/* toggle switch */
+.toggle-wrap{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--B)}
+.toggle-wrap:last-child{border-bottom:none;padding-bottom:0}
+.toggle-label{font-size:13px;font-weight:600;color:var(--T)}
+.toggle-sub{font-size:11px;color:var(--M);margin-top:2px}
+.toggle{position:relative;width:42px;height:24px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{
+  position:absolute;inset:0;background:#d1d5db;border-radius:12px;
+  cursor:pointer;transition:background .2s;
+}
+.toggle-slider::before{
+  content:'';position:absolute;left:3px;top:3px;
+  width:18px;height:18px;border-radius:50%;background:#fff;
+  transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2);
+}
+.toggle input:checked+.toggle-slider{background:var(--OK)}
+.toggle input:checked+.toggle-slider::before{transform:translateX(18px)}
+
+/* ── BREAKING NEWS ── */
+.bk-list{display:flex;flex-direction:column;gap:10px}
+.bk-item{
+  background:var(--W);border:1px solid var(--B);border-radius:8px;
+  padding:12px 14px;display:flex;align-items:center;gap:12px;
+  box-shadow:var(--S);
+}
+.bk-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.bk-dot.on{background:var(--OK)}
+.bk-dot.off{background:var(--B)}
+.bk-text{flex:1;font-size:13px;font-weight:600}
+.bk-date{font-size:11px;color:var(--M);white-space:nowrap}
+
+/* ── USERS ── */
+.users-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media(max-width:800px){.users-grid{grid-template-columns:1fr 1fr}}
+.user-card{background:var(--W);border:1px solid var(--B);border-radius:10px;box-shadow:var(--S);padding:18px;text-align:center}
+.user-av{width:52px;height:52px;border-radius:50%;background:var(--N);border:3px solid var(--G);display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:700;margin:0 auto 10px}
+.user-name{font-size:14px;font-weight:700;margin-bottom:4px}
+.user-email{font-size:11px;color:var(--M);margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.role-badge{display:inline-block;font-size:11px;font-weight:700;padding:3px 12px;border-radius:12px}
+.role-admin{background:#fef3c7;color:#92400e}
+.role-editor{background:var(--NL);color:var(--N)}
+.role-writer{background:var(--OKL);color:var(--OK)}
+.role-user{background:var(--BG);color:var(--M);border:1px solid var(--B)}
+
+/* ── EMPTY ── */
+.empty-state{text-align:center;padding:48px 20px}
+.empty-state svg{margin:0 auto 14px;opacity:.4}
+.empty-state h3{font-family:'Tajawal',sans-serif;font-size:17px;font-weight:700;color:var(--N);margin-bottom:6px}
+.empty-state p{font-size:13px;color:var(--M)}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:24px;left:24px;
+  background:var(--ND);color:#fff;
+  padding:12px 20px;border-radius:8px;
+  font-size:13px;font-weight:600;
+  box-shadow:0 6px 20px rgba(0,0,0,.25);
+  display:flex;align-items:center;gap:8px;
+  transform:translateY(80px);opacity:0;
+  transition:all .3s;z-index:999;
+  border-right:4px solid var(--G);
+}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.err{border-right-color:var(--R)}
+.toast.ok{border-right-color:var(--OK)}
+
+/* ── MODAL ── */
+.modal-bg{position:fixed;inset:0;background:rgba(14,35,71,.6);z-index:800;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+.modal-bg.on{display:flex}
+.modal{background:var(--W);border-radius:12px;width:100%;max-width:420px;box-shadow:0 20px 50px rgba(0,0,0,.3);overflow:hidden}
+.modal-head{background:var(--N);color:#fff;padding:16px 20px;font-family:'Tajawal',sans-serif;font-size:16px;font-weight:800;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--G)}
+.modal-close{background:none;border:none;color:rgba(255,255,255,.6);cursor:pointer;display:flex;align-items:center;transition:color .15s}
+.modal-close:hover{color:#fff}
+.modal-body{padding:20px}
+.modal-foot{padding:14px 20px;border-top:1px solid var(--B);display:flex;gap:10px;justify-content:flex-end}
+
+/* ── SPINNER ── */
+.spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  .sidebar{transform:translateX(100%)}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-right:0}
+  .topbar{padding:0 14px}
+  .content{padding:14px}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .form-grid{grid-template-columns:1fr}
+  .users-grid{grid-template-columns:1fr}
+}
+.menu-toggle{display:none;background:none;border:none;padding:6px;color:var(--N)}
+@media(max-width:768px){.menu-toggle{display:flex;align-items:center}}
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-bg" id="confirmModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span id="confirmTitle">تأكيد الحذف</span>
+      <button class="modal-close" onclick="closeModal()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p id="confirmMsg" style="font-size:14px;color:var(--T);line-height:1.7"></p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal()">إلغاء</button>
+      <button class="btn btn-danger" id="confirmOk">تأكيد الحذف</button>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+<!-- ══ SIDEBAR ══ -->
+<aside class="sidebar" id="sidebar">
+  <div class="sb-logo">
+    <img src="../img/logo.png" alt="" onerror="this.style.display='none'">
+    <div class="sb-logo-txt">
+      <div class="n">عين <b>الحدث</b></div>
+      <div class="s">لوحة التحكم</div>
+    </div>
+  </div>
+
+  <div class="sb-user">
+    <div class="sb-avatar" id="sbAvatar">م</div>
+    <div>
+      <div class="sb-uname" id="sbName">...</div>
+      <div class="sb-urole" id="sbRole">...</div>
+    </div>
+  </div>
+
+  <nav class="sb-nav">
+    <div class="sb-section">الرئيسية</div>
+    <div class="sb-item on" onclick="goPage('overview')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      نظرة عامة
+    </div>
+
+    <div class="sb-section">المحتوى</div>
+    <div class="sb-item" onclick="goPage('articles')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      المقالات
+      <span class="sb-badge" id="artsBadge">0</span>
+    </div>
+    <div class="sb-item" onclick="goPage('new-article')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      مقال جديد
+    </div>
+    <div class="sb-item" onclick="goPage('breaking')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      الأخبار العاجلة
+    </div>
+
+    <div class="sb-section">الإدارة</div>
+    <div class="sb-item" onclick="goPage('users')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      المستخدمون
+    </div>
+    <div class="sb-item" onclick="goPage('categories')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      الأقسام
+    </div>
+
+    <div class="sb-section">الموقع</div>
+    <div class="sb-item" onclick="window.open('/',_ ='_blank')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      زيارة الموقع
+    </div>
+  </nav>
+
+  <div class="sb-footer">
+    <button class="logout-btn" onclick="doLogout()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      تسجيل الخروج
+    </button>
+  </div>
+</aside>
+
+<!-- ══ MAIN ══ -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:12px">
+      <button class="menu-toggle" onclick="toggleSidebar()">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="tb-title" id="pageTitle">نظرة عامة</div>
+    </div>
+    <div class="tb-right">
+      <div class="tb-date">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span id="tbDate"></span>
+      </div>
+      <button class="btn btn-primary" style="padding:7px 14px;font-size:12px" onclick="goPage('new-article')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        مقال جديد
+      </button>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- ── OVERVIEW PAGE ── -->
+    <div class="page on" id="page-overview">
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card"><div class="stat-ico blue"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a3a6b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div><div class="stat-num" id="st-total">-</div><div class="stat-lbl">إجمالي المقالات</div></div></div>
+        <div class="stat-card"><div class="stat-ico green"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><div><div class="stat-num" id="st-pub">-</div><div class="stat-lbl">مقالات منشورة</div></div></div>
+        <div class="stat-card"><div class="stat-ico gold"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div><div><div class="stat-num" id="st-views">-</div><div class="stat-lbl">إجمالي المشاهدات</div></div></div>
+        <div class="stat-card"><div class="stat-ico blue"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a3a6b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div><div class="stat-num" id="st-users">-</div><div class="stat-lbl">المستخدمون</div></div></div>
+      </div>
+
+      <div class="tbl-wrap">
+        <div class="tbl-head">
+          <div class="tbl-title">أحدث المقالات</div>
+          <button class="btn btn-outline" style="font-size:12px;padding:6px 14px" onclick="goPage('articles')">عرض الكل</button>
+        </div>
+        <div id="overviewTable"><div style="padding:24px;text-align:center;color:var(--M);font-size:13px">جاري التحميل...</div></div>
+      </div>
+    </div>
+
+    <!-- ── ARTICLES PAGE ── -->
+    <div class="page" id="page-articles">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input type="text" id="artSearch" placeholder="بحث في المقالات..." style="padding:8px 14px;border:1.5px solid var(--B);border-radius:7px;font-size:13px;background:var(--W);outline:none;width:220px" oninput="filterArts()">
+          <select id="artCatFilter" style="padding:8px 12px;border:1.5px solid var(--B);border-radius:7px;font-size:13px;background:var(--W);outline:none" onchange="filterArts()">
+            <option value="">كل الأقسام</option>
+          </select>
+          <select id="artPubFilter" style="padding:8px 12px;border:1.5px solid var(--B);border-radius:7px;font-size:13px;background:var(--W);outline:none" onchange="filterArts()">
+            <option value="">الكل</option>
+            <option value="1">منشور</option>
+            <option value="0">مسودة</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="goPage('new-article')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          مقال جديد
+        </button>
+      </div>
+      <div class="tbl-wrap">
+        <div id="artsTable"><div style="padding:24px;text-align:center;color:var(--M);font-size:13px">جاري التحميل...</div></div>
+      </div>
+    </div>
+
+    <!-- ── NEW / EDIT ARTICLE PAGE ── -->
+    <div class="page" id="page-new-article">
+      <div class="form-grid">
+        <div>
+          <div class="form-card" style="margin-bottom:16px">
+            <div class="form-card-title">محتوى المقال</div>
+            <div class="fg">
+              <label>العنوان *</label>
+              <input type="text" id="artTitle" placeholder="أدخل عنوان المقال..." oninput="genSlug(this.value);countChars('artTitle','titleCount',150)">
+              <div class="char-count"><span id="titleCount">0</span> / 150</div>
+            </div>
+            <div class="fg">
+              <label>الـ Slug (رابط المقال)</label>
+              <input type="text" id="artSlug" placeholder="article-url-slug" style="direction:ltr;text-align:left">
+            </div>
+            <div class="fg">
+              <label>المقدمة (excerpt)</label>
+              <textarea id="artExcerpt" placeholder="وصف مختصر يظهر في قائمة الأخبار..." rows="3" oninput="countChars('artExcerpt','excCount',200)"></textarea>
+              <div class="char-count"><span id="excCount">0</span> / 200</div>
+            </div>
+            <div class="fg">
+              <label>المحتوى *</label>
+              <div class="editor-toolbar">
+                <button type="button" class="et-btn" onclick="fmt('bold')"><b>B</b></button>
+                <button type="button" class="et-btn" onclick="fmt('italic')"><i>I</i></button>
+                <button type="button" class="et-btn" onclick="fmt('underline')"><u>U</u></button>
+                <button type="button" class="et-btn" onclick="fmtH('h2')">H2</button>
+                <button type="button" class="et-btn" onclick="fmtH('h3')">H3</button>
+                <button type="button" class="et-btn" onclick="fmt('insertUnorderedList')">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                </button>
+                <button type="button" class="et-btn" onclick="insertLink()">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                </button>
+              </div>
+              <div class="editor-area" id="editor" contenteditable="true" dir="rtl" data-placeholder="اكتب محتوى المقال هنا..."></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="form-card">
+            <div class="form-card-title">إعدادات النشر</div>
+            <div class="toggle-wrap">
+              <div><div class="toggle-label">نشر المقال</div><div class="toggle-sub">سيظهر على الموقع فور النشر</div></div>
+              <label class="toggle"><input type="checkbox" id="artPublished"><span class="toggle-slider"></span></label>
+            </div>
+            <div class="toggle-wrap">
+              <div><div class="toggle-label">مقال مميز</div><div class="toggle-sub">يظهر في الـ Hero الرئيسي</div></div>
+              <label class="toggle"><input type="checkbox" id="artFeatured"><span class="toggle-slider"></span></label>
+            </div>
+            <div style="margin-top:14px" class="fg">
+              <label>تاريخ النشر</label>
+              <input type="datetime-local" id="artDate">
+            </div>
+            <div class="form-actions" style="margin-top:14px">
+              <button class="btn btn-success" onclick="saveArticle(true)" id="publishBtn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                نشر
+              </button>
+              <button class="btn btn-primary" onclick="saveArticle(false)" id="draftBtn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                حفظ مسودة
+              </button>
+            </div>
+          </div>
+
+          <div class="form-card">
+            <div class="form-card-title">تصنيف المقال</div>
+            <div class="fg">
+              <label>القسم *</label>
+              <select id="artCat"><option value="">-- اختر القسم --</option></select>
+            </div>
+            <div class="fg">
+              <label>الكاتب</label>
+              <input type="text" id="artAuthorName" placeholder="اسم الكاتب" value="فريق التحرير">
+            </div>
+          </div>
+
+          <div class="form-card">
+            <div class="form-card-title">صورة الغلاف</div>
+            <div class="fg">
+              <label>رابط الصورة (URL)</label>
+              <input type="url" id="artImg" placeholder="https://..." oninput="previewImg()" style="direction:ltr;text-align:left">
+            </div>
+            <div class="img-preview" id="imgPreview" onclick="document.getElementById('artImg').focus()">
+              <div class="img-preview-ph">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <p>معاينة الصورة</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <input type="hidden" id="editingId" value="">
+    </div>
+
+    <!-- ── BREAKING NEWS PAGE ── -->
+    <div class="page" id="page-breaking">
+      <div class="form-card" style="margin-bottom:18px;max-width:640px">
+        <div class="form-card-title">إضافة خبر عاجل</div>
+        <div class="fg">
+          <label>نص الخبر العاجل *</label>
+          <input type="text" id="bkInput" placeholder="أدخل نص الخبر العاجل...">
+        </div>
+        <div class="fg">
+          <label>رابط المقال (اختياري)</label>
+          <input type="url" id="bkUrl" placeholder="https://..." style="direction:ltr;text-align:left">
+        </div>
+        <button class="btn btn-primary" onclick="addBreaking()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          إضافة خبر عاجل
+        </button>
+      </div>
+      <div class="tbl-wrap">
+        <div class="tbl-head"><div class="tbl-title">الأخبار العاجلة الحالية</div></div>
+        <div id="bkList" style="padding:14px;display:flex;flex-direction:column;gap:10px"><div style="text-align:center;color:var(--M);font-size:13px;padding:16px">جاري التحميل...</div></div>
+      </div>
+    </div>
+
+    <!-- ── USERS PAGE ── -->
+    <div class="page" id="page-users">
+      <div class="users-grid" id="usersGrid"><div style="text-align:center;color:var(--M);font-size:13px;padding:40px;grid-column:1/-1">جاري التحميل...</div></div>
+    </div>
+
+    <!-- ── CATEGORIES PAGE ── -->
+    <div class="page" id="page-categories">
+      <div class="tbl-wrap">
+        <div class="tbl-head"><div class="tbl-title">الأقسام</div></div>
+        <div id="catsTable"><div style="padding:24px;text-align:center;color:var(--M);font-size:13px">جاري التحميل...</div></div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /layout -->
+
+<script>
+const SUPABASE_URL = 'https://eejzgklrfabvvuyksjbj.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlanpna2xyZmFidnZ1eWtzamJqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1MjkwMTcsImV4cCI6MjA4OTEwNTAxN30.gbhB_W7X3xlKkk7DjnTEhMhHqj8_O61HhaiNFq8YigI';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const ALLOWED_ROLES = ['admin', 'editor', 'writer'];
+
+// ═══ AUTH CHECK ═══
+sb.auth.getSession().then(async ({data:{session}})=>{
+  if(!session){ window.location.href='./login.html'; return; }
+  CURRENT_USER = session.user;
+
+  // التحقق من الرول
+  const {data} = await sb.from('users')
+    .select('name, role_id, roles(name)')
+    .eq('id', session.user.id).single();
+
+  const role = data?.roles?.name || 'user';
+
+  if(!ALLOWED_ROLES.includes(role)){
+    // مش عنده صلاحية — سجل خروج وارجع للـ login
+    await sb.auth.signOut();
+    window.location.href='./login.html?err=unauthorized';
+    return;
+  }
+
+  const name = data?.name || session.user.email.split('@')[0];
+  document.getElementById('sbName').textContent = name;
+  document.getElementById('sbRole').textContent = roleLabel(role);
+  document.getElementById('sbAvatar').textContent = name.charAt(0).toUpperCase();
+
+  // إظهار/إخفاء عناصر حسب الرول
+  applyRolePermissions(role);
+
+  initDashboard();
+});
+
+function roleLabel(r){
+  const m={admin:'مدير',editor:'محرر',writer:'كاتب',user:'مستخدم'};
+  return m[r]||r;
+}
+
+// ═══ ROLE PERMISSIONS ═══
+let CATS=[], ALL_ARTS=[], CURRENT_USER=null, CURRENT_ROLE='writer';
+
+function applyRolePermissions(role){
+  CURRENT_ROLE = role;
+  // writer — يكتب فقط، لا يرى المستخدمين والأقسام
+  if(role === 'writer'){
+    document.querySelectorAll('.sb-item[onclick*="\'users\'"], .sb-item[onclick*="\'categories\'"]')
+      .forEach(el => el.style.display='none');
+  }
+  // editor — لا يرى المستخدمين
+  if(role === 'editor'){
+    document.querySelectorAll('.sb-item[onclick*="\'users\'"]')
+      .forEach(el => el.style.display='none');
+  }
+  // admin — يرى كل شيء (لا تغيير)
+}
+
+// ═══ INIT ═══
+async function initDashboard(){
+  document.getElementById('tbDate').textContent =
+    new Date().toLocaleDateString('ar-EG',{weekday:'short',year:'numeric',month:'short',day:'numeric'});
+
+  await loadCats();
+  loadOverview();
+}
+
+// ═══ NAVIGATION ═══
+const PAGE_TITLES = {
+  overview:'نظرة عامة', articles:'المقالات', 'new-article':'مقال جديد',
+  breaking:'الأخبار العاجلة', users:'المستخدمون', categories:'الأقسام'
+};
+
+function goPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.sb-item').forEach(i=>i.classList.remove('on'));
+  document.getElementById(`page-${id}`)?.classList.add('on');
+  document.querySelector(`.sb-item[onclick*="'${id}'"]`)?.classList.add('on');
+  document.getElementById('pageTitle').textContent = PAGE_TITLES[id]||id;
+  document.getElementById('sidebar').classList.remove('open');
+
+  // reset new article form if navigating to it fresh
+  if(id==='new-article' && !document.getElementById('editingId').value) resetArticleForm();
+
+  // lazy load
+  if(id==='articles') loadArtsTable();
+  if(id==='breaking') loadBreaking();
+  if(id==='users')    loadUsers();
+  if(id==='categories') loadCatsTable();
+}
+
+// ═══ CATS ═══
+async function loadCats(){
+  const {data}=await sb.from('categories').select('*').order('id');
+  if(!data) return;
+  CATS=data;
+  // populate selects
+  ['artCat','artCatFilter'].forEach(id=>{
+    const sel=document.getElementById(id);
+    if(!sel) return;
+    CATS.forEach(c=>{
+      const o=document.createElement('option');
+      o.value=c.id; o.textContent=c.name; sel.appendChild(o);
+    });
+  });
+}
+
+// ═══ OVERVIEW ═══
+async function loadOverview(){
+  const [{count:total},{count:pub},{data:views},{count:users}] = await Promise.all([
+    sb.from('articles').select('*',{count:'exact',head:true}),
+    sb.from('articles').select('*',{count:'exact',head:true}).eq('published',true),
+    sb.from('article_views_count').select('views_count'),
+    sb.from('users').select('*',{count:'exact',head:true}),
+  ]);
+
+  const totalViews = views?.reduce((s,r)=>s+(+r.views_count||0),0)||0;
+  document.getElementById('st-total').textContent = fmtN(total||0);
+  document.getElementById('st-pub').textContent   = fmtN(pub||0);
+  document.getElementById('st-views').textContent = fmtN(totalViews);
+  document.getElementById('st-users').textContent = fmtN(users||0);
+  document.getElementById('artsBadge').textContent= total||0;
+
+  // recent articles
+  const {data:arts}=await sb.from('articles')
+    .select('id,title,published,created_at,category:categories(name,color)')
+    .order('created_at',{ascending:false}).limit(5);
+
+  renderArtsTable('overviewTable', arts||[], true);
+}
+
+// ═══ ARTICLES TABLE ═══
+async function loadArtsTable(){
+  const {data}=await sb.from('articles')
+    .select('id,title,published,created_at,category:categories(name,color),author:users(name)')
+    .order('created_at',{ascending:false}).limit(100);
+  ALL_ARTS = data||[];
+  filterArts();
+}
+
+function filterArts(){
+  const q   = document.getElementById('artSearch')?.value.toLowerCase()||'';
+  const cat = document.getElementById('artCatFilter')?.value||'';
+  const pub = document.getElementById('artPubFilter')?.value||'';
+  let list  = ALL_ARTS;
+  if(q)   list = list.filter(a=>a.title.toLowerCase().includes(q));
+  if(cat) list = list.filter(a=>String(a.category_id)===cat || (a.category && CATS.find(c=>c.name===a.category.name && String(c.id)===cat)));
+  if(pub!=='') list = list.filter(a=>pub==='1'?a.published:!a.published);
+  renderArtsTable('artsTable', list, false);
+}
+
+function renderArtsTable(targetId, arts, mini){
+  const wrap = document.getElementById(targetId);
+  if(!arts.length){
+    wrap.innerHTML=`<div class="empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><h3>لا توجد مقالات</h3><p>لم يتم إضافة أي مقالات بعد</p></div>`;
+    return;
+  }
+  wrap.innerHTML=`<table>
+    <thead><tr>
+      <th>العنوان</th>
+      <th>القسم</th>
+      ${mini?'':'<th>الكاتب</th>'}
+      <th>التاريخ</th>
+      <th>الحالة</th>
+      <th>إجراءات</th>
+    </tr></thead>
+    <tbody>${arts.map(a=>`
+      <tr>
+        <td><div class="td-title" title="${x(a.title)}">${x(a.title)}</div></td>
+        <td>${a.category?`<span class="td-cat" style="background:${a.category.color}22;color:${a.category.color}">${a.category.name}</span>`:'-'}</td>
+        ${mini?'':'<td style="color:var(--M);font-size:12px">${a.author?.name||\'—\'}</td>'}
+        <td style="color:var(--M);font-size:12px;white-space:nowrap">${fmtD(a.created_at)}</td>
+        <td><span class="td-pub ${a.published?'yes':'no'}">${a.published?'منشور':'مسودة'}</span></td>
+        <td><div class="td-actions">
+          <button class="act-btn edit" onclick="editArticle('${a.id}')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            تعديل
+          </button>
+          <button class="act-btn del" onclick="deleteArticle('${a.id}','${x(a.title)}')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+            حذف
+          </button>
+        </div></td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+
+// ═══ ARTICLE FORM ═══
+function resetArticleForm(){
+  document.getElementById('editingId').value='';
+  document.getElementById('artTitle').value='';
+  document.getElementById('artSlug').value='';
+  document.getElementById('artExcerpt').value='';
+  document.getElementById('editor').innerHTML='';
+  document.getElementById('artCat').value='';
+  document.getElementById('artImg').value='';
+  document.getElementById('artPublished').checked=false;
+  document.getElementById('artFeatured').checked=false;
+  document.getElementById('artAuthorName').value='فريق التحرير';
+  document.getElementById('artDate').value=new Date().toISOString().slice(0,16);
+  document.getElementById('imgPreview').innerHTML=`<div class="img-preview-ph"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><p>معاينة الصورة</p></div>`;
+  document.getElementById('titleCount').textContent='0';
+  document.getElementById('excCount').textContent='0';
+  document.getElementById('pageTitle').textContent='مقال جديد';
+}
+
+async function editArticle(id){
+  const {data,error}=await sb.from('articles').select('*').eq('id',id).single();
+  if(error||!data){toast('حدث خطأ في تحميل المقال','err');return;}
+
+  document.getElementById('editingId').value=id;
+  document.getElementById('artTitle').value=data.title||'';
+  document.getElementById('artSlug').value=data.slug||'';
+  document.getElementById('artExcerpt').value=data.excerpt||'';
+  document.getElementById('editor').innerHTML=data.content||'';
+  document.getElementById('artCat').value=data.category_id||'';
+  document.getElementById('artImg').value=data.cover_image||'';
+  document.getElementById('artPublished').checked=data.published||false;
+  document.getElementById('artFeatured').checked=data.featured||false;
+  document.getElementById('artAuthorName').value=data.author_name||'فريق التحرير';
+  if(data.published_at) document.getElementById('artDate').value=data.published_at.slice(0,16);
+
+  if(data.cover_image) previewImg();
+  countChars('artTitle','titleCount',150);
+  countChars('artExcerpt','excCount',200);
+
+  goPage('new-article');
+  document.getElementById('pageTitle').textContent='تعديل المقال';
+}
+
+async function saveArticle(publish){
+  const id    = document.getElementById('editingId').value;
+  const title = document.getElementById('artTitle').value.trim();
+  const slug  = document.getElementById('artSlug').value.trim();
+  const cat   = document.getElementById('artCat').value;
+  const content = document.getElementById('editor').innerHTML;
+
+  if(!title){toast('العنوان مطلوب','err');document.getElementById('artTitle').focus();return;}
+  if(!cat){toast('اختر القسم','err');document.getElementById('artCat').focus();return;}
+
+  const btn = document.getElementById(publish?'publishBtn':'draftBtn');
+  btn.disabled=true; btn.innerHTML=`<div class="spin"></div> جاري الحفظ...`;
+
+  const payload = {
+    title,
+    slug: slug || makeSlug(title),
+    excerpt:   document.getElementById('artExcerpt').value.trim()||null,
+    content,
+    cover_image: document.getElementById('artImg').value.trim()||null,
+    category_id: cat||null,
+    published: publish || document.getElementById('artPublished').checked,
+    featured:  document.getElementById('artFeatured').checked,
+    published_at: document.getElementById('artDate').value ? new Date(document.getElementById('artDate').value).toISOString() : new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+
+  let error;
+  if(id){
+    ({error}=await sb.from('articles').update(payload).eq('id',id));
+  } else {
+    ({error}=await sb.from('articles').insert(payload));
+  }
+
+  btn.disabled=false;
+  btn.innerHTML = publish
+    ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> نشر`
+    : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> حفظ مسودة`;
+
+  if(error){ toast('حدث خطأ: '+error.message,'err'); return; }
+  toast(id ? 'تم تحديث المقال' : (publish?'تم نشر المقال':'تم حفظ المسودة'), 'ok');
+  document.getElementById('editingId').value='';
+  setTimeout(()=>goPage('articles'),800);
+}
+
+function deleteArticle(id, title){
+  document.getElementById('confirmMsg').textContent=`هل أنت متأكد من حذف المقال "${title}"? لا يمكن التراجع عن هذا الإجراء.`;
+  document.getElementById('confirmModal').classList.add('on');
+  document.getElementById('confirmOk').onclick=async()=>{
+    closeModal();
+    const {error}=await sb.from('articles').delete().eq('id',id);
+    if(error){toast('حدث خطأ','err');return;}
+    toast('تم حذف المقال','ok');
+    loadArtsTable();
+    loadOverview();
+  };
+}
+
+// ═══ BREAKING NEWS ═══
+async function loadBreaking(){
+  const {data}=await sb.from('breaking_news').select('*').order('created_at',{ascending:false});
+  const wrap=document.getElementById('bkList');
+  if(!data?.length){
+    wrap.innerHTML=`<div class="empty-state"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><h3>لا توجد أخبار عاجلة</h3></div>`;
+    return;
+  }
+  wrap.innerHTML=data.map(n=>`
+    <div class="bk-item">
+      <div class="bk-dot ${n.is_active?'on':'off'}"></div>
+      <div class="bk-text">${x(n.text)}</div>
+      <div class="bk-date">${fmtD(n.created_at)}</div>
+      <button class="act-btn ${n.is_active?'del':'pub'}" onclick="toggleBreaking('${n.id}',${n.is_active})">
+        ${n.is_active?'إيقاف':'تفعيل'}
+      </button>
+      <button class="act-btn del" onclick="deleteBreaking('${n.id}')">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+      </button>
+    </div>`).join('');
+}
+
+async function addBreaking(){
+  const txt=document.getElementById('bkInput').value.trim();
+  const url=document.getElementById('bkUrl').value.trim();
+  if(!txt){toast('أدخل نص الخبر','err');return;}
+  const {error}=await sb.from('breaking_news').insert({text:txt,url:url||null,is_active:true,created_by:CURRENT_USER?.id});
+  if(error){toast('حدث خطأ','err');return;}
+  document.getElementById('bkInput').value='';
+  document.getElementById('bkUrl').value='';
+  toast('تم إضافة الخبر العاجل','ok');
+  loadBreaking();
+}
+
+async function toggleBreaking(id, active){
+  await sb.from('breaking_news').update({is_active:!active}).eq('id',id);
+  loadBreaking();
+}
+
+async function deleteBreaking(id){
+  await sb.from('breaking_news').delete().eq('id',id);
+  toast('تم حذف الخبر','ok');
+  loadBreaking();
+}
+
+// ═══ USERS ═══
+async function loadUsers(){
+  const {data}=await sb.from('users').select('id, name, email, is_active, roles(id,name)').order('created_at');
+  const grid=document.getElementById('usersGrid');
+  if(!data?.length){
+    grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--M)">لا يوجد مستخدمون</div>';
+    return;
+  }
+
+  const isAdmin = CURRENT_ROLE === 'admin';
+
+  grid.innerHTML=data.map(u=>{
+    const role = u.roles?.name || 'user';
+    const roleId = u.roles?.id || 4;
+    const roleColors = {admin:'#fef3c7|#92400e',editor:'#eef1f8|#1a3a6b',writer:'#f0fdf4|#16a34a',user:'#f3f4f6|#6b7280'};
+    const [bg,col] = (roleColors[role]||'#f3f4f6|#6b7280').split('|');
+
+    return `
+    <div class="user-card" id="uc-${u.id}">
+      <div class="user-av">${(u.name||u.email||'?').charAt(0).toUpperCase()}</div>
+      <div class="user-name">${x(u.name||'—')}</div>
+      <div class="user-email" title="${u.email}">${x(u.email||'')}</div>
+      <span class="role-badge" style="background:${bg};color:${col};margin-bottom:${isAdmin?'10px':'0'}">${roleLabel(role)}</span>
+
+      ${isAdmin ? `
+        <div style="width:100%">
+          <select onchange="changeRole('${u.id}',this.value)" style="width:100%;padding:7px 10px;border:1.5px solid var(--B);border-radius:6px;font-size:12px;background:var(--BG);outline:none;cursor:pointer;font-family:'Cairo',sans-serif;color:var(--T)">
+            <option value="1" ${roleId===1?'selected':''}>مدير</option>
+            <option value="2" ${roleId===2?'selected':''}>محرر</option>
+            <option value="3" ${roleId===3?'selected':''}>كاتب</option>
+            <option value="4" ${roleId===4?'selected':''}>مستخدم</option>
+          </select>
+        </div>
+      ` : ''}
+    </div>`;
+  }).join('');
+}
+
+async function changeRole(userId, newRoleId){
+  // منع الأدمن من تغيير دوره لنفسه لو كان هو المستخدم الوحيد الأدمن
+  if(userId === CURRENT_USER?.id && parseInt(newRoleId) !== 1){
+    const {count} = await sb.from('users')
+      .select('*',{count:'exact',head:true})
+      .eq('role_id', 1);
+    if(count <= 1){
+      toast('لا يمكن إزالة آخر مدير في النظام','err');
+      loadUsers(); // reset the select
+      return;
+    }
+  }
+
+  const {error} = await sb.from('users').update({role_id: parseInt(newRoleId)}).eq('id', userId);
+  if(error){ toast('حدث خطأ في تغيير الصلاحية','err'); return; }
+
+  const roleNames = {1:'مدير',2:'محرر',3:'كاتب',4:'مستخدم'};
+  toast(`تم تغيير الصلاحية إلى "${roleNames[newRoleId]}"`, 'ok');
+}
+
+// ═══ CATEGORIES TABLE ═══
+async function loadCatsTable(){
+  const wrap=document.getElementById('catsTable');
+  if(!CATS.length){wrap.innerHTML='<div style="padding:20px;text-align:center;color:var(--M)">لا توجد أقسام</div>';return;}
+  wrap.innerHTML=`<table>
+    <thead><tr><th>الاسم</th><th>الـ Slug</th><th>اللون</th><th>الأيقونة</th></tr></thead>
+    <tbody>${CATS.map(c=>`
+      <tr>
+        <td><strong>${x(c.name)}</strong></td>
+        <td style="direction:ltr;text-align:left;color:var(--M);font-size:12px">${x(c.slug)}</td>
+        <td><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:14px;height:14px;border-radius:50%;background:${c.color||'#ccc'};display:inline-block"></span>${c.color||'—'}</span></td>
+        <td style="font-size:18px">${c.icon||'—'}</td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+
+// ═══ EDITOR HELPERS ═══
+function fmt(cmd){ document.getElementById('editor').focus(); document.execCommand(cmd,false,null); }
+function fmtH(tag){ document.getElementById('editor').focus(); document.execCommand('formatBlock',false,`<${tag}>`); }
+function insertLink(){
+  const url=prompt('أدخل الرابط:');
+  if(url){ document.getElementById('editor').focus(); document.execCommand('createLink',false,url); }
+}
+
+function genSlug(title){
+  if(document.getElementById('editingId').value) return;
+  document.getElementById('artSlug').value = makeSlug(title);
+}
+function makeSlug(t){
+  return t.trim().toLowerCase()
+    .replace(/[\u0600-\u06FF\s]+/g,'-')
+    .replace(/[^a-z0-9\-]/g,'')
+    .replace(/-+/g,'-').replace(/^-|-$/g,'')
+    + '-' + Date.now().toString(36);
+}
+
+function previewImg(){
+  const url=document.getElementById('artImg').value.trim();
+  const p=document.getElementById('imgPreview');
+  if(url){ p.innerHTML=`<img src="${url}" onerror="this.parentElement.innerHTML='<div class=\\'img-preview-ph\\'><p style=\\'color:var(--R)\\'>رابط الصورة غير صحيح</p></div>'">`; }
+  else { p.innerHTML=`<div class="img-preview-ph"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg><p>معاينة الصورة</p></div>`; }
+}
+
+function countChars(inputId, countId, max){
+  const val=document.getElementById(inputId)?.value||'';
+  const el=document.getElementById(countId);
+  if(el){ el.textContent=val.length; el.style.color=val.length>max?'var(--R)':'var(--M)'; }
+}
+
+// ═══ MODAL / TOAST ═══
+function closeModal(){ document.getElementById('confirmModal').classList.remove('on'); }
+document.getElementById('confirmModal').addEventListener('click',e=>{ if(e.target===e.currentTarget) closeModal(); });
+
+function toast(msg, type='ok'){
+  const t=document.getElementById('toast');
+  t.className=`toast ${type}`;
+  t.innerHTML=(type==='ok'
+    ?`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`
+    :`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`)
+    +` ${msg}`;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3200);
+}
+
+// ═══ LOGOUT ═══
+async function doLogout(){
+  await sb.auth.signOut();
+  window.location.href='./login.html';
+}
+
+// ═══ MOBILE SIDEBAR ═══
+function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('open'); }
+
+// ═══ HELPERS ═══
+function fmtD(iso){ return iso?new Date(iso).toLocaleDateString('ar-EG',{year:'numeric',month:'short',day:'numeric'}):'—'; }
+function fmtN(n){ return n>=1e6?(n/1e6).toFixed(1)+'م':n>=1e3?(n/1e3).toFixed(1)+'ك':String(n); }
+function x(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// editor placeholder
+document.getElementById('editor').addEventListener('focus',function(){this.classList.add('focused')});
+document.getElementById('editor').addEventListener('blur',function(){this.classList.remove('focused')});
+</script>
+</body>
+</html>
